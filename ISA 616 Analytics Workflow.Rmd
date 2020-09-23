@@ -1,0 +1,102 @@
+---
+title: "ISA 616 Analytics Workflow"
+author: "Ethan Rosser"
+date: "9/23/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Overview of Analysis
+
+In this analysis, I create a regression model that uses physiochemical properties of wine to predict the wine quality score. This model will allow Winemakers at Wine Inc. to better understand what levels of physiochemical properties lead to a better wine quality score for their variants of the Portuguese “Vinho Verde” wine. This regression model will help Wine Inc. to produce higher quality wine, which in turn may help to increase sales revenue and brand reputation. This analysis may also help to decrease costs associated with creating new types of wine through trial and error because Winemakers within the company will have a statistically supported understanding of how each physiochemical property of the wine impacts the quality score. 
+
+I have accessed wine quality data from the University of California, Irvine’s Machine Learning Repository. There are two datasets related to red and white variants of the Portuguese “Vinho Verde” wine. One dataset is for the white variants, and one is for the red variants. The link to access these two datasets is below:
+https://archive.ics.uci.edu/ml/datasets/wine+quality
+
+
+```{r overview}
+# Load in necessary packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(DataExplorer, corrplot)
+```
+
+# Data Description
+
+Before performing exploratory analysis, we first must combine the 2 datasets into 1. This is done by adding a "Color" variable on each dataset and then rbinding the datasets together. Additionally, the "Color" variable needs to be coded as a factor. 
+
+```{r combine}
+
+# Read in 2 datasets. 1 dataset is for white wine and the other dataset is for red wine. 
+# Change the file path as necessary. 
+white <- read.csv("/Users/ethanrosser/Documents/Semesters/2020 Fall/ISA 616/Project/winequality-white.csv", sep = ";")
+red <- read.csv("/Users/ethanrosser/Documents/Semesters/2020 Fall/ISA 616/Project/winequality-red.csv", sep = ";")
+
+# Create a column to specify the color of the wine for both datasets. 
+white$Color <- "White"
+red$Color <- "Red"
+
+# Combine the red and white datasets together
+wine <- white
+wine <- rbind(wine, red)
+
+# Change the data type for the Color variable
+wine$Color <- as.factor(wine$Color)
+
+```
+
+Now, we can properly describe the dataset. In our dataset, there are 6497 total observations and 13 variables. We have 12 numeric variables and 1 factor (Color) that has 2 categories: red and white.
+
+```{r introduceData}
+# Show the structure of the data set
+str(wine)
+```
+
+This is the first 10 rows in the dataset to better show the structure of the data.
+```{r}
+head(wine)
+```
+
+
+This bar chart shows the frequency of red and white wines within the data. There are 4898 observations of white wine and 1599 observations for red wine.
+
+```{r barCharts}
+# Plot bar charts to show the amount of data in each category for the categorical variables
+plot_bar(wine)
+```
+
+These histograms show the distributions of values for each numeric variable within the dataset. 
+
+```{r histograms}
+# Plot histograms for the numeric variables
+plot_histogram(wine)
+```
+
+There are 0 missing values in the dataset. This is a good thing because this cuts down considerably on the preprocessing work that needs to be done before modeling the data.
+
+```{r missings}
+# Plot the number of missing values for each variable
+plot_missing(wine)
+```
+
+Here is a plot that shows the correlation between the numeric variables within the dataset.
+```{r}
+#numericVars <- subset(wine, select = -c("Color"))
+# rquery.cormat(wine)
+```
+
+
+# Preprocessing
+
+```{r preprocessing}
+
+```
+
+# Conclusion
+
+```{r}
+
+```
+
