@@ -81,18 +81,59 @@ There are 0 missing values in the dataset. This is a good thing because this cut
 plot_missing(wine)
 ```
 
-Here is a plot that shows the correlation between the numeric variables within the dataset.
-```{r}
-#numericVars <- subset(wine, select = -c("Color"))
-# rquery.cormat(wine)
-```
+Here is a plot that shows the correlation between the numeric variables within the dataset. Overall, none of the variables have high enough of a correlation to be particularly concerning. But, we should make a note of the .72 correlation between total sulfur dioxide and free sulfur dioxide. Additionally, we should note the -.69 correlation between alcohol and density. But, neither of these correlations are high enough to suggest redunancy in the variables, so we will keep all of the predictors for modeling.  
 
+```{r}
+# Subset the data down to just the numeric variables
+numericVars <- subset(wine, select = -c(Color))
+# Create a correlation matrix
+plot_correlation(numericVars, title = "Correlation Matrix")
+```
 
 # Preprocessing
 
+The main preprocessing that needs to be done for this analysis is eliminating outliers from the numeric variables. 
+
 ```{r preprocessing}
+# Remove the 2 outliers with very high chloride levels
+wine <- wine[ which(wine$chlorides <= .4),]
+
+# Remove the 2 outliers with very high citric acid levels
+wine <- wine[ which(wine$citric.acid <= 1),]
+
+# Remove the 1 outlier with a high density level
+wine <- wine[ which(wine$density < 1.02),]
+
+# Remove the 1 outlier with a very high free sulfur dioxide level that was over 100 points higher than the second highest value
+wine <- wine[ which(wine$free.sulfur.dioxide <= 150),]
+
+# Remove the 3 outliers with high sulphate levels
+wine <- wine[ which(wine$sulphates <= 1.7),]
+
+# Remove the 1 outlier with a high volatile acidity level
+wine <- wine[ which(wine$volatile.acidity < 1.4),]
 
 ```
+
+These are the resulting distributions of values for each variable after removing outliers. The distributions appear more normal and less skewed.
+
+```{r histograms2}
+# Plot histograms for the numeric variables
+plot_histogram(wine)
+```
+
+# Modeling
+
+```{r modeling}
+null = lm(quality ~ 1, data = wine)
+full = lm(quality ~ ., data = wine)
+
+stepwise = step(null, scope = list(lower = null, upper = full), direction = "both", trace = 0, k = 2)
+
+summary(stepwise)
+
+```
+
 
 # Conclusion
 

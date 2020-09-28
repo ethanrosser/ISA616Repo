@@ -1,0 +1,30 @@
+---
+title: "RMarkdownTest"
+author: "Ethan Rosser"
+date: "9/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+
+
+```{r cars}
+summary(mtcars)
+head(mtcars)
+boxplot(mtcars$mpg)
+```
+
+```{r}
+reg.hp = lm(mpg~hp, data = mtcars)
+summary(reg.hp)
+qqnorm(reg.hp$residuals)
+plot(reg.hp)
+```
+
