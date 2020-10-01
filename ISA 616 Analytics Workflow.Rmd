@@ -1,9 +1,10 @@
 ---
-title: "ISA 616 Analytics Workflow"
+title: "ISA 616 Analytics Workflow - Regression Model to Predict Wine Quality for Wine Inc."
 author: "Ethan Rosser"
 date: "10/02/2020"
 output: 
   html_document:
+    toc: true
     code_folding: hide
 ---
 
@@ -13,25 +14,21 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Overview of Analysis
 
-In this analysis, I create a regression model that uses physiochemical properties of wine to predict the wine quality score. This model will allow Winemakers at Wine Inc. to better understand what levels of physiochemical properties lead to a better wine quality score for their variants of the Portuguese “Vinho Verde” wine. This regression model will help Wine Inc. to produce higher quality wine, which in turn may help to increase sales revenue and brand reputation. This analysis may also help to decrease costs associated with creating new types of wine through trial and error because Winemakers within the company will have a statistically supported understanding of how each physiochemical property of the wine impacts the quality score. 
+In this analysis, I create a regression model that uses physiochemical properties of wine to predict the wine quality score. This model will allow the product design team at Wine Inc. to better understand what levels of physiochemical properties lead to a better wine quality score for their variants of the Portuguese “Vinho Verde” wine. This regression model will help Wine Inc.'s product design team to produce higher quality wine and has the potential to increase sales revenue and improve brand reputation. This analysis may also help to decrease costs associated with creating new types of wine. This is because the product design team within the company will have a statistically supported understanding of how each physiochemical property of wine impacts the quality score and may be able to avoid producing low quality wine. 
 
-Below is the session information that was used to conduct this analysis, as well as the packages used. Be sure to have the correct version of R or packages installed or there may be issues with reproducibility.
+For this analysis, we use R version 3.6.1. Further detail regarding the session information and packages used can be seen in the appendix section. Be sure to have the correct version of R and packages installed or there may be issues with reproducibility.
 
-```{r overview, results='hide'}
-# Load in necessary packages
+```{r overview, message = FALSE}
+# Install pacman if it is not already installed
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(DataExplorer, corrplot, curl)
+# Load in necessary packages
+pacman::p_load(DataExplorer, corrplot, curl, caret)
+
 ```
-
-```{r sessionInfo}
-sessionInfo()
-```
-
-
 
 # Data Description
 
-I have accessed wine quality data from the University of California, Irvine’s Machine Learning Repository. There are two datasets related to red and white variants of the Portuguese “Vinho Verde” wine. One dataset is for the white variants, and one is for the red variants. We access these datasets directly via the curl package, but the link to manually download these two datasets is below just in case there are any issues:
+I have accessed wine quality data from the University of California, Irvine’s Machine Learning Repository. There are two datasets related to red and white variants of the Portuguese “Vinho Verde” wine. One dataset is for the white variants, and one is for the red variants. We access these datasets directly via the curl package, but the link to manually download these two datasets is below in case there are any issues:
 https://archive.ics.uci.edu/ml/datasets/wine+quality
 
 Before performing exploratory analysis, we first must combine the 2 datasets into 1. This is done by adding a "Color" variable on each dataset and then rbinding the datasets together. 
@@ -64,11 +61,13 @@ str(wine)
 ```
 
 This is the first 10 rows in the dataset to better show the structure of the data.
+
 ```{r}
 head(wine)
 ```
 
 This is the last 10 rows in the dataset to better show the structure of the data.
+
 ```{r}
 tail(wine)
 ```
@@ -80,7 +79,7 @@ This bar chart shows the frequency of red and white wines within the data. There
 plot_bar(wine)
 ```
 
-These histograms show the distributions of values for each numeric variable within the dataset. Some of the variables have distributions that are skewed to the right, and this will be taken care of in pre-processing. 
+These histograms show the distributions of values for each numeric variable within the dataset. Some of the variables have distributions that are skewed to the right, and this will be addressed in pre-processing. 
 
 ```{r histograms}
 # Plot histograms for the numeric variables
@@ -105,7 +104,7 @@ plot_correlation(numericVars, title = "Correlation Matrix")
 
 # Preprocessing
 
-The main preprocessing that needs to be done for this analysis is eliminating outliers from the numeric variables. 
+The key preprocessing that needs to be done for this analysis is eliminating outliers from the numeric variables. We do not need to perform any imputations due to there being no missing values. 
 
 ```{r preprocessing}
 # Remove the 2 outliers with very high chloride levels
@@ -137,25 +136,67 @@ plot_histogram(wine)
 
 # Modeling
 
+Before modeling, we randomly split our data into training and testing datasets. We use 70% of the observations to train the model and 30% of the observations to test the model performance on data that the model was not trained on. We do this so that we can more effectively evaluate model performance. 
+
+```{r trainTestSplit}
+
+# Set sample size to be 70% of the total data
+sampleSize <- .70 * nrow(wine)
+
+## set the seed to make the partition reproducible
+set.seed(100)
+
+# Generate the random indexes that will be used for the training dataset
+train_ind <- sample(seq_len(nrow(wine)), size = sampleSize)
+
+# Create training and testing datasets
+train <- wine[train_ind, ]
+test <- wine[-train_ind, ]
+```
+
+Now that we have the data split into training and testing datasets, we can build a stepwise mutiple linear regression model. The results of this model can be seen below. Forwards and Backwards selection techniques were also attempted but did not provide as good of predictive power. 
+
 ```{r modeling}
+# Create null and full models on the training data
+null = lm(quality ~ 1, data = train)
+full = lm(quality ~ ., data = train)
 
-# Split into training and testing datasets
-
-
-
-null = lm(quality ~ 1, data = wine)
-full = lm(quality ~ ., data = wine)
-
+# Build a stepwise mutiple linear regression model
 stepwise = step(null, scope = list(lower = null, upper = full), direction = "both", trace = 0, k = 2)
 
+# Show the accuracy of the model on the training data
 summary(stepwise)
 
 ```
 
+We have built our model using the training data, so we can now evaluate it using our testing data. 
+
+The Root Mean Squared Error of our model on the test data is .734.
+```{r test}
+# Predict the wine quality scores for the test data
+testPred <- predict(stepwise, newdata = test)
+
+RMSE(testPred, test$quality)
+```
+The R Squared vaule for our model on the test data is .302.
+```{r testR2}
+R2(testPred, test$quality)
+```
+
+These two values are comparable to, and actually slightly better than, the performance on the training data. This means that the model was not overfit to the training data and can be used in practice on external data.
 
 # Conclusion
 
 ```{r}
 
+```
+
+# Appendix
+
+This output shows the session information such as the R version and the version of each of the packages used for the analysis.
+
+```{r session}
+# Display the session information
+sessionInfo()
 ```
 
