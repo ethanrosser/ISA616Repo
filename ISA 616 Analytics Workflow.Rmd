@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Overview of Analysis
 
-In this analysis, I create a regression model that uses physiochemical properties of wine to predict the wine quality score. This model will allow the product design team at Wine Inc. to better understand what levels of physiochemical properties lead to a better wine quality score for their variants of the Portuguese “Vinho Verde” wine. This regression model will help Wine Inc.'s product design team to produce higher quality wine and has the potential to increase sales revenue and improve brand reputation. This analysis may also help to decrease costs associated with creating new types of wine. This is because the product design team within the company will have a statistically supported understanding of how each physiochemical property of wine impacts the quality score and may be able to avoid producing low quality wine. 
+In this analysis, I create a stepwise multiple linear regression model that uses physiochemical properties of wine to predict the wine quality score. This model will allow the product design team at Wine Inc. that creates new wine variants to better understand what levels of physiochemical properties lead to a better wine quality score for their variants of the Portuguese “Vinho Verde” wine. This regression model will help Wine Inc.'s product design team to produce higher quality wine and has the potential to increase sales revenue and improve brand reputation. This analysis may also help to decrease costs associated with creating new types of wine. This is because the product design team within the company will have a statistically supported understanding of how each physiochemical property of wine impacts the quality score and may be able to avoid producing low quality wine. 
 
 For this analysis, we use R version 3.6.1. Further detail regarding the session information and packages used can be seen in the appendix section. Be sure to have the correct version of R and packages installed or there may be issues with reproducibility.
 
@@ -22,7 +22,7 @@ For this analysis, we use R version 3.6.1. Further detail regarding the session 
 # Install pacman if it is not already installed
 if (!require("pacman")) install.packages("pacman")
 # Load in necessary packages
-pacman::p_load(DataExplorer, corrplot, curl, caret)
+pacman::p_load(DataExplorer, corrplot, curl, caret, dplyr)
 
 ```
 
@@ -53,20 +53,20 @@ wine$Color <- as.factor(wine$Color)
 
 ```
 
-Now, we can properly describe the dataset. In our dataset, there are 6497 total observations and 13 variables. We have 12 numeric variables and 1 factor (Color) that has 2 categories: red and white.
+We can now properly describe the dataset. In our dataset, there are 6497 total observations of 13 variables. We have 12 numeric variables and 1 factor variable (Color) that has 2 categories: red and white.
 
 ```{r introduceData}
 # Show the structure of the data set
 str(wine)
 ```
 
-This is the first 10 rows in the dataset to better show the structure of the data.
+These are the first 10 rows in the dataset to better show the structure of the data.
 
 ```{r}
 head(wine)
 ```
 
-This is the last 10 rows in the dataset to better show the structure of the data.
+These are the last 10 rows in the dataset to better show the structure of the data.
 
 ```{r}
 tail(wine)
@@ -86,14 +86,14 @@ These histograms show the distributions of values for each numeric variable with
 plot_histogram(wine)
 ```
 
-There are 0 missing values in the dataset. This is a good thing because this cuts down considerably on the preprocessing work that needs to be done before modeling the data.
+There are 0 missing values in the dataset. This means that we will not have too much data pre-processing to perform before modeling. 
 
 ```{r missings}
 # Plot the number of missing values for each variable
 plot_missing(wine)
 ```
 
-Here is a plot that shows the correlation between the numeric variables within the dataset. Overall, none of the variables have high enough of a correlation to be particularly concerning. But, we should make a note of the .72 correlation between total sulfur dioxide and free sulfur dioxide. Additionally, we should note the -.69 correlation between alcohol and density. But, neither of these correlations are high enough to suggest redunancy in the variables, so we will keep all of the predictors for modeling.  
+Here is a plot that shows the correlation between the numeric variables within the dataset. Overall, none of the variables have high enough of a correlation to be particularly concerning. But, we should make a note of the .72 correlation between total sulfur dioxide and free sulfur dioxide. Additionally, we should note the -.69 correlation between alcohol and density. But, neither of these correlations are high enough to suggest major redunancy in the variables, so we will keep all of the predictors for modeling. Another reason we should keep these variables is because we do not have too many variables in our dataset, so dimension reduction is not a huge priority. 
 
 ```{r}
 # Subset the data down to just the numeric variables
@@ -104,7 +104,7 @@ plot_correlation(numericVars, title = "Correlation Matrix")
 
 # Preprocessing
 
-The key preprocessing that needs to be done for this analysis is eliminating outliers from the numeric variables. We do not need to perform any imputations due to there being no missing values. 
+The main preprocessing that needs to be done for this analysis is eliminating outliers from the numeric variables. We do not need to perform any imputations due to there being no missing values.
 
 ```{r preprocessing}
 # Remove the 2 outliers with very high chloride levels
@@ -127,7 +127,16 @@ wine <- wine[ which(wine$volatile.acidity < 1.4),]
 
 ```
 
-These are the resulting distributions of values for each variable after removing outliers. The distributions appear more normal and less skewed.
+
+We also scale the data due to the fact that many of the numeric variables within the dataset have different scales. This will also help the model to be more interpretable.
+
+```{r scale}
+# Scale every numeric variable within the dataset
+wine <- wine %>% mutate_if(is.numeric, scale)
+```
+
+
+These are the resulting distributions of values for each variable after removing outliers and scaling the data. The distributions appear more normal and less skewed.
 
 ```{r histograms2}
 # Plot histograms for the numeric variables
@@ -136,7 +145,7 @@ plot_histogram(wine)
 
 # Modeling
 
-Before modeling, we randomly split our data into training and testing datasets. We use 70% of the observations to train the model and 30% of the observations to test the model performance on data that the model was not trained on. We do this so that we can more effectively evaluate model performance. 
+Before modeling, we randomly split our data into training and testing datasets. We use 70% of the observations to train the model and 30% of the observations to test the model performance on data that the model was not trained on. I chose to train the model on only 70% of the data because the dataset is relatively small at roughly 6500 observations, so it is important to leave a large enough portion of the observations to test the model on. We do this splitting so that we can more effectively evaluate model performance. 
 
 ```{r trainTestSplit}
 
@@ -154,7 +163,7 @@ train <- wine[train_ind, ]
 test <- wine[-train_ind, ]
 ```
 
-Now that we have the data split into training and testing datasets, we can build a stepwise mutiple linear regression model. The results of this model can be seen below. Forwards and Backwards selection techniques were also attempted but did not provide as good of predictive power. 
+Now that we have the data split into training and testing datasets, we can build a stepwise mutiple linear regression model. The results of this model can be seen below. Forwards and Backwards selection techniques were also attempted but did not provide as much predictive power. 
 
 ```{r modeling}
 # Create null and full models on the training data
@@ -171,25 +180,27 @@ summary(stepwise)
 
 We have built our model using the training data, so we can now evaluate it using our testing data. 
 
-The Root Mean Squared Error of our model on the test data is .734.
+The Root Mean Squared Error of our model on the test data is .838
+
 ```{r test}
 # Predict the wine quality scores for the test data
 testPred <- predict(stepwise, newdata = test)
-
+# Calculate the RMSE 
 RMSE(testPred, test$quality)
 ```
-The R Squared vaule for our model on the test data is .302.
+
+The R Squared vaule for our model on the test data is .302. This means that 30.2% of the variation in the wine quality score is explained by the model for the testing data. 
+
 ```{r testR2}
+# Calculate the R Squared value
 R2(testPred, test$quality)
 ```
 
-These two values are comparable to, and actually slightly better than, the performance on the training data. This means that the model was not overfit to the training data and can be used in practice on external data.
+These two values are comparable to, and actually slightly better than, the performance on the training data. This means that the model was not overfit to the training data and can be used in practice on external data. In this model, every variable is statistically significant. Holding all other variables constant, higher levels of alcohol, sulphates, residual sugar, free sulfur dioxide, fixed acidity, and pH each have a positive impact on the quality score. But, holding all other variables constant, volatile acidity, the color being white, density, total sulfur dioxide, and chlorides each have a negative impact on wine quality scores. 
 
 # Conclusion
 
-```{r}
-
-```
+In conclusion, this stepwise multiple linear regression model may be useful in assisting the product design team at Wine Inc. to produce higher quality variants of the "Vinho Verde" wine. The product design team now has statistical evidence to support how each physiochemical property of wine impacts the quality score. This may help to decrease costs associated with producing new wine variants because Wine Inc. can avoid producing lower quality wine. The level of alcohol is the most important factor for predicting wine quality according to this model. Also of note is the fact that white wine results in lower quality scores, holding all of the other physiochemical properties constant. So, focusing on producing red wine with higher alcohol content may help Wine Inc. get better quality scores on new wine variants. This model and the insights gained may help the product design team to increase sales revenue and improve brand reputation through producing this higher quality wine. But, the amount of variation in the quality score that is explained by the model is only around 30%, so this model should only be used in conjunction with the product design team's industry expertise and years of experience. The combination between this regression model and the product design team's expertise may lead to better results than either one of them individually. 
 
 # Appendix
 
