@@ -12,4 +12,4 @@ One dataset is for the white variants, and one is for the red variants.
 We access these datasets directly via the curl package, but the link to manually download these two datasets is below in case there are any issues:
 https://archive.ics.uci.edu/ml/datasets/wine+quality
 
-No extra files are needed in order to run this analysis.
+No extra files are needed in order to run this analysis. But, in case the links used to access the data break, I have provided two csv files for the red and white wine data that can be used.
